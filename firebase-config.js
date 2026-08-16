@@ -1,7 +1,7 @@
 // RoutePulse India Firebase Web App configuration
 // This web configuration is safe to use in the client-side website.
 window.firebaseConfig = {
-  apiKey: "AIzaSyCmFjqnJmFHJTCeuFwZpbnd8kGV9tAcg",
+  apiKey: "AIzaSyCmFjqnJmFHJTCeuiFwZpbnd8kGV9tAcg",
   authDomain: "routepulse-india.firebaseapp.com",
   projectId: "routepulse-india",
   storageBucket: "routepulse-india.firebasestorage.app",
