@@ -1,11 +1,10 @@
-// RoutePulse India Firebase configuration
-// Replace the placeholder values below with the Web App config from your Firebase project.
-// Firebase Console: Project settings -> Your apps -> Web app -> Config
-export const firebaseConfig = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "PASTE_MESSAGING_SENDER_ID",
-  appId: "PASTE_APP_ID"
+// RoutePulse India Firebase Web App configuration
+// This web configuration is safe to use in the client-side website.
+window.firebaseConfig = {
+  apiKey: "AIzaSyCmFjqnJmFHJTCeuFwZpbnd8kGV9tAcg",
+  authDomain: "routepulse-india.firebaseapp.com",
+  projectId: "routepulse-india",
+  storageBucket: "routepulse-india.firebasestorage.app",
+  messagingSenderId: "474571170677",
+  appId: "1:474571170677:web:d152c6eb30727b1782293c"
 };
