@@ -4,14 +4,13 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Route Tracker — Bus Tracking</title>
 <meta name="description" content="Route Tracker — organisation bus routes, passenger tracking and live bus location.">
-<link rel="stylesheet" href="style.css?v=10007">
+<link rel="stylesheet" href="style.css?v=10008">
 <style>
 .tab-page{display:none;min-height:calc(100vh - 150px)}
 .tab-page.active{display:block;animation:tabIn .35s ease both}
 @keyframes tabIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .topbar nav a.active-tab{color:#7cff9a;background:rgba(68,255,120,.1);box-shadow:inset 0 -3px 0 #39e76f}
 .home-tracker{padding-top:54px}.home-tracker .section-head{margin-bottom:26px}
-/* Navigation is always visible, including on small phones. */
 .topbar nav{display:flex!important;visibility:visible!important;opacity:1!important}
 .topbar nav a{display:block!important;visibility:visible!important;opacity:1!important}
 @media(max-width:800px){
@@ -34,9 +33,12 @@
 <section id="registration" class="tab-page section"><div class="split"><div><span class="eyebrow">FOR OPERATORS</span><h2>Register your organisation</h2><p>Create an organisation profile and receive a unique passenger code. Your organisation and bus data are stored online so passengers can access them from other devices.</p><ul class="ticks"><li>School, college, company, private or government-linked fleet</li><li>Add and edit routes, stops, schedules and drivers</li><li>Enable live GPS from the driver's phone</li></ul></div><form class="card form" id="registerForm" onsubmit="registerOrg(event)"><h3>Organisation registration</h3><label>Organisation type<select id="orgType" required><option value="">Select type</option><option>School</option><option>College / University</option><option>Company / Corporate</option><option>Private Bus Operator</option><option>Government Organisation</option><option>Other</option></select></label><label>Organisation name<input id="orgName" required placeholder="Organisation name"></label><label>Admin email<input id="orgEmail" type="email" required placeholder="admin@example.com" autocomplete="email"></label><label>Password<input id="orgPassword" type="password" minlength="6" required placeholder="Minimum 6 characters" autocomplete="new-password"></label><button class="btn primary" type="submit">Create organisation</button><div id="registrationResult"></div></form></div></section>
 </main>
 <footer><b>Route Tracker</b><span>Multi-device organisation data • Firebase cloud database • Live GPS</span><span>Organisation bus routes are provided by registered operators.</span></footer>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><script src="app.js?v=10007"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script><script src="firebase-config.js"></script><script src="app.js?v=10008"></script>
 <script>
-(function(){const pages=document.querySelectorAll('.tab-page'),tabs=document.querySelectorAll('[data-tab]');function showTab(name){if(!['home','login','registration'].includes(name))name='home';pages.forEach(p=>p.classList.toggle('active',p.id===name));tabs.forEach(t=>t.classList.toggle('active-tab',t.dataset.tab===name));history.replaceState(null,'','#'+name);window.scrollTo({top:0,behavior:'smooth'});}tabs.forEach(t=>t.addEventListener('click',e=>{e.preventDefault();showTab(t.dataset.tab)}));showTab((location.hash||'#home').slice(1));document.addEventListener('pointerdown',function(e){const b=e.target.closest('.btn');if(!b)return;b.classList.add('button-pressed');const r=document.createElement('span');r.className='ripple';const rect=b.getBoundingClientRect();r.style.left=((e.clientX||rect.left+rect.width/2)-rect.left)+'px';r.style.top=((e.clientY||rect.top+rect.height/2)-rect.top)+'px';b.appendChild(r);setTimeout(()=>r.remove(),650);});document.addEventListener('pointerup',e=>{const b=e.target.closest('.btn');if(b)b.classList.remove('button-pressed')},{passive:true});document.addEventListener('pointercancel',e=>{const b=e.target.closest('.btn');if(b)b.classList.remove('button-pressed')},{passive:true});})();
+(function(){const pages=document.querySelectorAll('.tab-page'),tabs=document.querySelectorAll('[data-tab]');function showTab(name){if(!['home','login','registration'].includes(name))name='home';pages.forEach(p=>p.classList.toggle('active',p.id===name));tabs.forEach(t=>t.classList.toggle('active-tab',t.dataset.tab===name));history.replaceState(null,'','#'+name);window.scrollTo({top:0,behavior:'smooth'});}tabs.forEach(t=>t.addEventListener('click',e=>{e.preventDefault();showTab(t.dataset.tab)}));showTab((location.hash||'#home').slice(1));
+function addPressEffect(e){const el=e.target.closest('.btn,.topbar nav a');if(!el)return;el.classList.add('button-pressed');const r=document.createElement('span');r.className='ripple';const rect=el.getBoundingClientRect();r.style.left=((e.clientX||rect.left+rect.width/2)-rect.left)+'px';r.style.top=((e.clientY||rect.top+rect.height/2)-rect.top)+'px';el.appendChild(r);setTimeout(()=>r.remove(),650);}
+function release(e){const el=e.target.closest('.btn,.topbar nav a');if(el)el.classList.remove('button-pressed');}
+document.addEventListener('pointerdown',addPressEffect,{passive:true});document.addEventListener('pointerup',release,{passive:true});document.addEventListener('pointercancel',release,{passive:true});})();
 </script>
 </body>
 </html>
