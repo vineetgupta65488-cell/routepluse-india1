@@ -1,24 +1,54 @@
 (function(){
-window.registerOrg=async function(e){e.preventDefault();if(!window.auth||!window.db)return window.msg('registrationResult','Firebase is not connected.','error');const form=e.target;try{const type=document.getElementById('orgType').value,name=document.getElementById('orgName').value.trim(),email=document.getElementById('orgEmail').value.trim().toLowerCase(),password=document.getElementById('orgPassword').value;const cred=await window.auth.createUserWithEmailAndPassword(email,password);let passengerCode=window.code(),q=await window.db.collection('organisations').where('code','==',passengerCode).limit(1).get();while(!q.empty){passengerCode=window.code();q=await window.db.collection('organisations').where('code','==',passengerCode).limit(1).get()}await window.db.collection('organisations').doc(cred.user.uid).set({uid:cred.user.uid,type,name,email,code:passengerCode,createdAt:firebase.firestore.FieldValue.serverTimestamp()});window.msg('registrationResult',`<b>Registration successful.</b><br><br><span style="font-size:12px;opacity:.8">YOUR UNIQUE PASSENGER CODE</span><br><strong style="font-size:28px;letter-spacing:2px">${window.esc(passengerCode)}</strong><br><br><span id="emailStatus">Sending email to <b>${window.esc(email)}</b>…</span><br><small>Keep this code safe. Passengers use it to view your organisation's buses.</small>`,'success');const mailRef=window.db.collection('mail').doc();await mailRef.set({to:email,message:{subject:`Your Route Tracker passenger code — ${name}`,text:`Hello ${name},\n\nYour organisation has been registered with Route Tracker.\n\nYour unique passenger code is: ${passengerCode}\n\nShare this passenger code with authorised passengers so they can view your organisation's bus routes and live tracking. Never share your admin password.\n\nRoute Tracker`,html:`<div style="font-family:Arial,sans-serif;line-height:1.6"><h2>Route Tracker</h2><p>Hello ${window.esc(name)},</p><p>Your organisation has been registered successfully.</p><p>Your unique passenger code is:</p><div style="font-size:28px;font-weight:700;letter-spacing:3px;padding:16px;background:#eef8f3;border-radius:10px;display:inline-block">${window.esc(passengerCode)}</div><p>Use this code to let authorised passengers view your organisation's bus routes and live tracking.</p><p><b>Safety:</b> Never share your admin password.</p></div>`},organisationId:cred.user.uid,createdAt:firebase.firestore.FieldValue.serverTimestamp()});const statusEl=document.getElementById('emailStatus');const unsub=mailRef.onSnapshot(s=>{if(!statusEl)return;const d=s.data()||{},state=d.delivery&&d.delivery.state;if(state==='SUCCESS'){statusEl.innerHTML='<b style="color:var(--green)">✓ Email sent successfully</b>';unsub()}else if(state==='ERROR'){statusEl.innerHTML='<b>Email could not be delivered.</b> Check the email configuration.';unsub()}});window.currentOrg={id:cred.user.uid,uid:cred.user.uid,type,name,email,code:passengerCode};form.reset();if(typeof window.renderDashboard==='function')window.renderDashboard(window.currentOrg)}catch(error){window.msg('registrationResult',window.err(error),'error')}};
-
-// Standalone forgot-password handler: does not depend on app.js globals.
-window.forgotPassword=async function(){
-  const result=document.getElementById('loginResult');
-  const emailEl=document.getElementById('loginEmail');
-  const email=(emailEl?.value||'').trim().toLowerCase();
-  if(result) result.innerHTML='<div class="success">Checking your admin email…</div>';
-  if(!email){if(result)result.innerHTML='<div class="error">Enter your admin email first.</div>';emailEl?.focus();return}
-  if(typeof firebase==='undefined'){if(result)result.innerHTML='<div class="error">Firebase library did not load. Refresh the page and try again.</div>';return}
-  try{
-    const resetAuth=firebase.auth();
-    if(result)result.innerHTML='<div class="success">Sending password reset email…</div>';
-    await resetAuth.sendPasswordResetEmail(email);
-    if(result)result.innerHTML=`<div class="success"><b>Password reset email sent.</b><br>Check <b>${email.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</b>, including Spam/Junk/Promotions.</div>`;
-  }catch(error){
-    console.error('Forgot password:',error);
-    const messages={'auth/operation-not-allowed':'Email/Password sign-in is not enabled in Firebase Authentication.','auth/invalid-email':'Please enter a valid email address.','auth/user-not-found':'No Firebase account was found with this email address.','auth/too-many-requests':'Too many attempts. Please wait and try again.','auth/network-request-failed':'Network error. Check your internet connection.'};
-    const text=messages[error.code]||error.message||'Unable to send the password reset email.';
-    if(result)result.innerHTML=`<div class="error"><b>Password reset failed.</b><br>${text}<br><small>${error.code||''}</small></div>`;
+function fb(){
+  if(typeof firebase==='undefined') throw new Error('Firebase SDK did not load.');
+  if(!window.firebaseConfig) throw new Error('Firebase configuration did not load.');
+  const app=(firebase.apps&&firebase.apps.length)?firebase.app():firebase.initializeApp(window.firebaseConfig);
+  return {auth:app.auth(),db:app.firestore()};
+}
+function safe(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function show(id,text,type){const el=document.getElementById(id);if(el)el.innerHTML='<div class="'+type+'">'+text+'</div>}
+window.registerOrg=async function(e){
+ e.preventDefault();const form=e.target;
+ try{
+  const x=fb(),type=document.getElementById('orgType').value,name=document.getElementById('orgName').value.trim(),email=document.getElementById('orgEmail').value.trim().toLowerCase(),password=document.getElementById('orgPassword').value;
+  const cred=await x.auth.createUserWithEmailAndPassword(email,password);let code=window.code?window.code():'RP-'+Math.random().toString(36).slice(2,7).toUpperCase();
+  let q=await x.db.collection('organisations').where('code','==',code).limit(1).get();while(!q.empty){code=window.code();q=await x.db.collection('organisations').where('code','==',code).limit(1).get()}
+  await x.db.collection('organisations').doc(cred.user.uid).set({uid:cred.user.uid,type,name,email,code,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+  window.currentOrg={id:cred.user.uid,uid:cred.user.uid,type,name,email,code};
+  show('registrationResult','<b>Registration successful.</b><br><br>Your unique passenger code: <strong style="font-size:24px">'+safe(code)+'</strong><br><small>Share this code with passengers.</small>','success');form.reset();
+  if(typeof window.renderDashboard==='function'){window.dashboard=document.getElementById('dashboard');window.renderDashboard(window.currentOrg);document.getElementById('dashboard')?.scrollIntoView({behavior:'smooth',block:'start'})}
+ }catch(error){show('registrationResult',safe(error.message||error),'error')}
+};
+window.adminLogin=async function(e){
+ e.preventDefault();const result=document.getElementById('loginResult'),emailEl=document.getElementById('loginEmail'),passEl=document.getElementById('loginPassword');
+ const email=(emailEl?.value||'').trim().toLowerCase(),password=passEl?.value||'';
+ if(!email||!password){show('loginResult','Please enter your email and password.','error');return}
+ show('loginResult','Signing in…','success');
+ try{
+  const x=fb();
+  const cred=await x.auth.signInWithEmailAndPassword(email,password);
+  let snap=await x.db.collection('organisations').doc(cred.user.uid).get();
+  if(!snap.exists){
+   const byEmail=await x.db.collection('organisations').where('email','==',email).limit(1).get();
+   if(!byEmail.empty)snap=byEmail.docs[0];
   }
+  if(!snap.exists){
+   await x.auth.signOut();
+   show('loginResult','<b>Login successful, but the organisation profile is missing.</b><br>This Firebase account is not linked to an organisation record yet. Please register the organisation again with a different email, or contact the site administrator.','error');return;
+  }
+  const data=snap.data()||{};window.currentOrg={id:snap.id,uid:cred.user.uid,...data};
+  show('loginResult','<b>Login successful.</b> Loading '+safe(data.name||'organisation')+'…','success');
+  window.dashboard=document.getElementById('dashboard');window.renderDashboard(window.currentOrg);
+  setTimeout(()=>document.getElementById('dashboard')?.scrollIntoView({behavior:'smooth',block:'start'}),100);
+ }catch(error){
+  const m={'auth/invalid-credential':'Invalid email or password.','auth/user-not-found':'No account was found with this email address.','auth/wrong-password':'Invalid email or password.','auth/too-many-requests':'Too many attempts. Please try again later.','auth/network-request-failed':'Network error. Check your internet connection.','permission-denied':'Firestore permission denied. Check your Firebase Firestore rules.'};
+  show('loginResult',safe(m[error.code]||error.message||'Unable to log in.')+'<br><small>Error: '+safe(error.code||'unknown')+'</small>','error');
+ }
+};
+window.forgotPassword=async function(){
+ const result=document.getElementById('loginResult'),emailEl=document.getElementById('loginEmail'),email=(emailEl?.value||'').trim().toLowerCase();
+ if(!email){show('loginResult','Enter your admin email first.','error');emailEl?.focus();return}
+ try{const x=fb();show('loginResult','Sending password reset email…','success');await x.auth.sendPasswordResetEmail(email);show('loginResult','<b>Password reset email sent.</b><br>Check your inbox, Spam/Junk and Promotions.','success')}
+ catch(error){show('loginResult','<b>Password reset failed.</b><br>'+safe(error.message||error)+'<br><small>Error: '+safe(error.code||'unknown')+'</small>','error')}
 };
 })();
