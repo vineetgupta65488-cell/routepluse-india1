@@ -1,54 +1,10 @@
 (function(){
-function fb(){
-  if(typeof firebase==='undefined') throw new Error('Firebase SDK did not load.');
-  if(!window.firebaseConfig) throw new Error('Firebase configuration did not load.');
-  const app=(firebase.apps&&firebase.apps.length)?firebase.app():firebase.initializeApp(window.firebaseConfig);
-  return {auth:app.auth(),db:app.firestore()};
-}
-function safe(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function show(id,text,type){const el=document.getElementById(id);if(el)el.innerHTML='<div class="'+type+'">'+text+'</div>}
-window.registerOrg=async function(e){
- e.preventDefault();const form=e.target;
- try{
-  const x=fb(),type=document.getElementById('orgType').value,name=document.getElementById('orgName').value.trim(),email=document.getElementById('orgEmail').value.trim().toLowerCase(),password=document.getElementById('orgPassword').value;
-  const cred=await x.auth.createUserWithEmailAndPassword(email,password);let code=window.code?window.code():'RP-'+Math.random().toString(36).slice(2,7).toUpperCase();
-  let q=await x.db.collection('organisations').where('code','==',code).limit(1).get();while(!q.empty){code=window.code();q=await x.db.collection('organisations').where('code','==',code).limit(1).get()}
-  await x.db.collection('organisations').doc(cred.user.uid).set({uid:cred.user.uid,type,name,email,code,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
-  window.currentOrg={id:cred.user.uid,uid:cred.user.uid,type,name,email,code};
-  show('registrationResult','<b>Registration successful.</b><br><br>Your unique passenger code: <strong style="font-size:24px">'+safe(code)+'</strong><br><small>Share this code with passengers.</small>','success');form.reset();
-  if(typeof window.renderDashboard==='function'){window.dashboard=document.getElementById('dashboard');window.renderDashboard(window.currentOrg);document.getElementById('dashboard')?.scrollIntoView({behavior:'smooth',block:'start'})}
- }catch(error){show('registrationResult',safe(error.message||error),'error')}
-};
-window.adminLogin=async function(e){
- e.preventDefault();const result=document.getElementById('loginResult'),emailEl=document.getElementById('loginEmail'),passEl=document.getElementById('loginPassword');
- const email=(emailEl?.value||'').trim().toLowerCase(),password=passEl?.value||'';
- if(!email||!password){show('loginResult','Please enter your email and password.','error');return}
- show('loginResult','Signing in…','success');
- try{
-  const x=fb();
-  const cred=await x.auth.signInWithEmailAndPassword(email,password);
-  let snap=await x.db.collection('organisations').doc(cred.user.uid).get();
-  if(!snap.exists){
-   const byEmail=await x.db.collection('organisations').where('email','==',email).limit(1).get();
-   if(!byEmail.empty)snap=byEmail.docs[0];
-  }
-  if(!snap.exists){
-   await x.auth.signOut();
-   show('loginResult','<b>Login successful, but the organisation profile is missing.</b><br>This Firebase account is not linked to an organisation record yet. Please register the organisation again with a different email, or contact the site administrator.','error');return;
-  }
-  const data=snap.data()||{};window.currentOrg={id:snap.id,uid:cred.user.uid,...data};
-  show('loginResult','<b>Login successful.</b> Loading '+safe(data.name||'organisation')+'…','success');
-  window.dashboard=document.getElementById('dashboard');window.renderDashboard(window.currentOrg);
-  setTimeout(()=>document.getElementById('dashboard')?.scrollIntoView({behavior:'smooth',block:'start'}),100);
- }catch(error){
-  const m={'auth/invalid-credential':'Invalid email or password.','auth/user-not-found':'No account was found with this email address.','auth/wrong-password':'Invalid email or password.','auth/too-many-requests':'Too many attempts. Please try again later.','auth/network-request-failed':'Network error. Check your internet connection.','permission-denied':'Firestore permission denied. Check your Firebase Firestore rules.'};
-  show('loginResult',safe(m[error.code]||error.message||'Unable to log in.')+'<br><small>Error: '+safe(error.code||'unknown')+'</small>','error');
- }
-};
-window.forgotPassword=async function(){
- const result=document.getElementById('loginResult'),emailEl=document.getElementById('loginEmail'),email=(emailEl?.value||'').trim().toLowerCase();
- if(!email){show('loginResult','Enter your admin email first.','error');emailEl?.focus();return}
- try{const x=fb();show('loginResult','Sending password reset email…','success');await x.auth.sendPasswordResetEmail(email);show('loginResult','<b>Password reset email sent.</b><br>Check your inbox, Spam/Junk and Promotions.','success')}
- catch(error){show('loginResult','<b>Password reset failed.</b><br>'+safe(error.message||error)+'<br><small>Error: '+safe(error.code||'unknown')+'</small>','error')}
-};
+function fb(){if(typeof firebase==='undefined')throw new Error('Firebase SDK did not load.');if(!window.firebaseConfig)throw new Error('Firebase configuration did not load.');const app=firebase.apps&&firebase.apps.length?firebase.app():firebase.initializeApp(window.firebaseConfig);return{auth:app.auth(),db:app.firestore()}}
+function safe(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;')}
+function show(id,text,type){const el=document.getElementById(id);if(el)el.innerHTML='<div class="'+type+'">'+text+'</div>'}
+window.registerOrg=async function(e){e.preventDefault();try{const x=fb(),type=document.getElementById('orgType').value,name=document.getElementById('orgName').value.trim(),email=document.getElementById('orgEmail').value.trim().toLowerCase(),password=document.getElementById('orgPassword').value,cred=await x.auth.createUserWithEmailAndPassword(email,password);let code='RP-'+Math.random().toString(36).slice(2,5).toUpperCase()+'-'+Math.random().toString(36).slice(2,6).toUpperCase();await x.db.collection('organisations').doc(cred.user.uid).set({uid:cred.user.uid,type,name,email,code,createdAt:firebase.firestore.FieldValue.serverTimestamp()});window.currentOrg={id:cred.user.uid,uid:cred.user.uid,type,name,email,code};show('registrationResult','<b>Registration successful.</b><br><br>Your unique passenger code: <strong style="font-size:24px">'+safe(code)+'</strong><br><small>Share this code with passengers.</small>','success');e.target.reset();if(typeof window.renderDashboard==='function'){window.dashboard=document.getElementById('dashboard');window.renderDashboard(window.currentOrg)}}catch(error){show('registrationResult',safe(error.message||error),'error')}};
+window.adminLogin=async function(e){e.preventDefault();const email=(document.getElementById('loginEmail')?.value||'').trim().toLowerCase(),password=document.getElementById('loginPassword')?.value||'';if(!email||!password)return show('loginResult','Please enter your email and password.','error');show('loginResult','Signing in…','success');try{const x=fb(),cred=await x.auth.signInWithEmailAndPassword(email,password);let snap=await x.db.collection('organisations').doc(cred.user.uid).get();if(!snap.exists){const q=await x.db.collection('organisations').where('email','==',email).limit(1).get();if(!q.empty)snap=q.docs[0]}if(!snap.exists){await x.auth.signOut();return show('loginResult','<b>Login successful, but the organisation profile is missing.</b>','error')}window.currentOrg={id:snap.id,uid:cred.user.uid,...(snap.data()||{})};window.dashboard=document.getElementById('dashboard');show('loginResult','<b>Login successful.</b> Loading '+safe(window.currentOrg.name||'organisation')+'…','success');if(typeof window.renderDashboard==='function')window.renderDashboard(window.currentOrg);else fallbackDashboard(window.currentOrg);setTimeout(()=>window.dashboard?.scrollIntoView({behavior:'smooth',block:'start'}),100)}catch(error){const m={'auth/invalid-credential':'Invalid email or password.','auth/user-not-found':'No account was found with this email address.','auth/wrong-password':'Invalid email or password.','auth/too-many-requests':'Too many attempts. Please try again later.','auth/network-request-failed':'Network error. Check your internet connection.','permission-denied':'Firestore permission denied. Check your Firebase rules.'};show('loginResult',safe(m[error.code]||error.message||'Unable to log in.')+'<br><small>Error: '+safe(error.code||'unknown')+'</small>','error')}};
+window.forgotPassword=async function(){const email=(document.getElementById('loginEmail')?.value||'').trim().toLowerCase();if(!email)return show('loginResult','Enter your admin email first.','error');try{const x=fb();show('loginResult','Sending password reset email…','success');await x.auth.sendPasswordResetEmail(email);show('loginResult','<b>Password reset email sent.</b><br>Check your inbox, Spam/Junk and Promotions.','success')}catch(error){show('loginResult','<b>Password reset failed.</b><br>'+safe(error.message||error)+'<br><small>Error: '+safe(error.code||'unknown')+'</small>','error')}};
+function fallbackDashboard(o){const d=document.getElementById('dashboard');if(!d)return;d.classList.remove('hidden');d.innerHTML='<div class="card"><span class="eyebrow">ADMIN DASHBOARD</span><h3>'+safe(o.name||'Organisation')+'</h3><p class="route-meta">Passenger code: <b>'+safe(o.code||'Not available')+'</b> — share this with passengers.</p><div class="dashboard-grid"><div class="stat"><span class="route-meta">Buses</span><b id="fbBusCount">0</b></div><div class="stat"><span class="route-meta">Tracking</span><b id="fbTracking">Ready</b></div><div class="stat"><span class="route-meta">Code</span><b>'+safe(o.code||'')+'</b></div></div><form class="bus-form" id="fallbackBusForm"><label>Bus number<input name="bus" required placeholder="e.g. RP-101"></label><label>Driver name<input name="driver" required></label><label>Driver phone<input name="phone" required></label><label>Route name<input name="route" required placeholder="Tilak Nagar to Uttam Nagar"></label><label>Start point<input name="start" required></label><label>End point<input name="end" required></label><label class="full">Stops (comma separated)<input name="stops" required placeholder="Stop 1, Stop 2, Stop 3"></label><label>Schedule note<input name="schedule"></label><button class="btn primary" type="submit">Add bus</button></form><div id="fallbackBusList"><div class="empty">Loading buses…</div></div></div>';const form=document.getElementById('fallbackBusForm'),list=document.getElementById('fallbackBusList'),count=document.getElementById('fbBusCount'),track=document.getElementById('fbTracking');form.onsubmit=async function(e){e.preventDefault();const f=new FormData(form);try{const x=fb();await x.db.collection('organisations').doc(o.id).collection('buses').add({bus:f.get('bus'),driver:f.get('driver'),phone:f.get('phone'),route:f.get('route'),start:f.get('start'),end:f.get('end'),stops:f.get('stops').split(',').map(v=>v.trim()).filter(Boolean),schedule:f.get('schedule'),live:false,lat:null,lng:null,createdAt:firebase.firestore.FieldValue.serverTimestamp()});form.reset()}catch(error){alert(error.message||error)}};const x=fb();x.db.collection('organisations').doc(o.id).collection('buses').orderBy('createdAt','desc').onSnapshot(s=>{const buses=s.docs.map(v=>({id:v.id,...v.data()}));count.textContent=buses.length;track.textContent=buses.some(v=>v.live)?'LIVE':'Ready';list.innerHTML=buses.length?'<h3 style="margin-top:30px">Your buses</h3>'+buses.map(b=>'<div class="route-card"><div><div class="route-name">'+safe(b.bus)+' · '+safe(b.route)+'</div><div class="route-meta">Driver: '+safe(b.driver)+' · '+safe(b.phone)+'<br>'+safe(b.start)+' → '+safe(b.end)+'<br>Stops: '+safe((b.stops||[]).join(' → '))+'</div></div><div><b>'+safe(b.schedule||'Timetable added')+'</b><div class="route-meta">'+(b.live?'GPS active':'GPS ready')+'</div></div></div>').join(''):'<div class="empty">No buses added yet.</div>'},error=>{list.innerHTML='<div class="empty">Unable to load buses: '+safe(error.message||error)+'</div>'})}
+if(typeof window.renderDashboard!=='function')window.renderDashboard=fallbackDashboard;if(typeof window.addBus!=='function')window.addBus=function(e){e.preventDefault();document.getElementById('fallbackBusForm')?.requestSubmit()};
 })();
