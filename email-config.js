@@ -1,10 +1,10 @@
 // EmailJS configuration for Route Tracker registration emails.
-// Replace these three values with the IDs from your EmailJS account.
 window.routeTrackerEmailConfig = {
-  publicKey: 'YOUR_EMAILJS_PUBLIC_KEY',
-  serviceId: 'YOUR_EMAILJS_SERVICE_ID',
-  templateId: 'YOUR_EMAILJS_TEMPLATE_ID'
+  publicKey: 'X_r4OLLenpXOD7ftU',
+  serviceId: 'service_bpv439m',
+  templateId: 'template_thqcr3v'
 };
 
-// This is the page opened by the "Forgot password" link in the registration email.
+// Opens the Route Tracker Login page. The user can use "Forgot password?"
+// there to request a Firebase password-reset email.
 window.routeTrackerForgotPasswordUrl = window.location.origin + window.location.pathname + '#login';
